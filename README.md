@@ -4,6 +4,8 @@ A FastAPI backend with a REST endpoint, persistent WebSocket endpoint, and brows
 
 M2M100 runs Meta's MIT-licensed multilingual model on your machine. It supports Bangla and the other listed languages without an API key. Model weights (about 1.8 GB) are downloaded from Hugging Face on the first translation request, not during server startup. Model inference runs on CPU by default and can be slow. The mock provider is available for UI testing; it echoes submitted text and marks results with `"provider": "mock"` and `"is_mock": true`.
 
+For the technology stack, architecture, request flows, provider behavior, and project file tree, see [Project Documentation](docs/PROJECT_DOCUMENTATION.md).
+
 ## Run locally
 
 ```powershell
