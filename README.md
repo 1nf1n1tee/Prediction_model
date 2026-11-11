@@ -1,6 +1,8 @@
 # Realtime Translation API
 
-A FastAPI backend starter with a REST endpoint and a persistent WebSocket endpoint for translation requests. The default provider is a **mock**: it echoes the submitted text and marks the result with `"provider": "mock"` and `"is_mock": true`. Inject a real provider implementing `Translator` in `app/providers.py` and pass it to `create_app` when integrating a translation service. Provider adapters should raise `TranslationError` for upstream failures; REST returns HTTP 502 and WebSocket clients receive an error event while keeping the connection open.
+A FastAPI backend with a REST endpoint, persistent WebSocket endpoint, and browser chat interface. Bangla is the chat's default target language. The default provider is the local M2M100 model, so translations are real rather than echoed.
+
+M2M100 runs Meta's MIT-licensed multilingual model on your machine. It supports Bangla and the other listed languages without an API key. Model weights (about 1.8 GB) are downloaded from Hugging Face on the first translation request, not during server startup. Model inference runs on CPU by default and can be slow. The mock provider is available for UI testing; it echoes submitted text and marks results with `"provider": "mock"` and `"is_mock": true`.
 
 ## Run locally
 
@@ -8,16 +10,29 @@ A FastAPI backend starter with a REST endpoint and a persistent WebSocket endpoi
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+pip install -r model-requirements.txt
 uvicorn app.main:app --reload
 ```
 
-The root URL (`/`) lists the available endpoints. Interactive API docs are available at `/docs`.
+Open the root URL (`/`) for the translation chat interface. It connects to `/ws/translate` and loads language options from `/api/languages`. The interface shows whether a response came from the local model or the mock. Interactive API docs are available at `/docs`.
+
+### Provider options
+
+M2M100 is enabled by default. To explicitly select it or use another compatible Hugging Face model:
+
+```powershell
+$env:TRANSLATION_PROVIDER = "m2m100"
+$env:TRANSLATION_MODEL = "facebook/m2m100_418M"
+uvicorn app.main:app --reload
+```
+
+The default `facebook/m2m100_418M` supports English-to-Bangla and many other language pairs. M2M100 does not detect the source language: `"auto"` is treated as English, so select the actual source language for other input languages. The model accepts up to 1,024 input tokens; longer requests return an error instead of being silently truncated. To use the echo-only mock for UI testing, set `$env:TRANSLATION_PROVIDER = "mock"` before starting the server.
 
 ## HTTP API
 
 - `GET /api/health` — service health
 - `GET /api/languages` — available language codes
-- `POST /api/translate` — translate one text
+- `POST /api/translate` — translate one text; response includes `latency_ms`, the server-side provider execution time
 
 Example request:
 
@@ -33,7 +48,7 @@ The source language can be `"auto"`. Text must contain 1–5,000 characters; lan
 
 ## WebSocket API
 
-Connect to `/ws/translate` and send JSON translation requests using the same fields as the HTTP API. `request_id` is optional and is echoed in the response to correlate concurrent client messages.
+Connect to `/ws/translate` and send JSON translation requests using the same fields as the HTTP API. `request_id` is optional and is echoed in the response to correlate concurrent client messages. Successful responses include `latency_ms`, the server-side provider execution time; the chat displays this value below each translation.
 
 Success response:
 

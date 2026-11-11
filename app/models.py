@@ -13,6 +13,7 @@ class TranslationResponse(BaseModel):
     target_language: str
     provider: str
     is_mock: bool
+    latency_ms: float = Field(default=0, ge=0)
 
 
 class Language(BaseModel):
